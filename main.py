@@ -764,7 +764,7 @@ def main(kontaktdaten_path):
         setup_terminsuche(kontaktdaten_path)
     else:
         setup_codegenerierung()
-        main()
+        main(kontaktdaten_path)
 
 
 if __name__ == "__main__":
