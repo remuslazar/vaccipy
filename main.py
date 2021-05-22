@@ -600,7 +600,7 @@ class ImpfterminService():
                            + traceback.format_exc())
 
 
-def setup_terminsuche(kontaktdaten_path):
+def setup_terminsuche(kontaktdaten_path, check_delay):
     """
     Setup für die Terminsuche.
     Eingabe aller notwendigen Daten und ausführen der Methoden.
@@ -701,7 +701,7 @@ def setup_terminsuche(kontaktdaten_path):
         raise exc
 
     ImpfterminService.terminsuche(code=code, plz_impfzentren=plz_impfzentren, kontakt=kontakt,
-                                  check_delay=30)
+                                  check_delay=check_delay)
 
 
 def setup_codegenerierung():
@@ -751,7 +751,7 @@ def setup_codegenerierung():
     setup_codegenerierung()
 
 
-def main(kontaktdaten_path):
+def main(kontaktdaten_path, check_delay):
     # Check, ob die Datei "kontaktdaten.json" existiert
     print("\nWas möchtest du tun?\n"
           "[1] Termin suchen\n"
@@ -761,10 +761,10 @@ def main(kontaktdaten_path):
     print(" ")
 
     if option != "2":
-        setup_terminsuche(kontaktdaten_path)
+        setup_terminsuche(kontaktdaten_path=kontaktdaten_path, check_delay=check_delay)
     else:
         setup_codegenerierung()
-        main(kontaktdaten_path)
+        main(kontaktdaten_path, check_delay)
 
 
 if __name__ == "__main__":
@@ -773,8 +773,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="vaccipy")
     parser.add_argument('--config-file', help="Konfigurationsdatei",
                         default=os.path.join(PATH, "kontaktdaten.json"))
+    parser.add_argument('--check-delay', help="Wartezeit zwischen 2 Versuchen (in Sekunden)", type=int, default=30)
     args = parser.parse_args()
-    main(kontaktdaten_path=args.config_file)
+    main(kontaktdaten_path=args.config_file, check_delay=args.check_delay)
 
     # Für Windows: Fenster 1 Stunde offen halten nach Ausführung
     time.sleep(60 * 60)
