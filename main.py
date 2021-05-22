@@ -40,7 +40,7 @@ class ImpfterminService():
 
         # Logging einstellen
         self.log = CLogger("impfterminservice")
-        self.log.set_prefix(f"*{self.code[-4:]} | {', '.join(self.plz_impfzentren)}")
+        self.log.set_prefix(f"*{self.code[-4:]} | {self.kontakt['vorname']} | {', '.join(self.plz_impfzentren)}")
 
         # Session erstellen
         self.s = cloudscraper.create_scraper()
