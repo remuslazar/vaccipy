@@ -54,7 +54,7 @@ class ImpfterminService():
         self.impfzentrum = {}
         self.domain = None
         if not self.impfzentren_laden():
-            quit()
+            main()
 
         # Verfügbare Impfstoffe laden
         self.verfuegbare_qualifikationen: List[Dict] = []
@@ -159,7 +159,10 @@ class ImpfterminService():
         :return:
         """
 
-        self.log.info("Browser-Cookies generieren")
+        if terminbuchung == False:
+            self.log.info("Browser-Cookies generieren")
+        else:
+            self.log.info("Termin über Selenium buchen")
         # Chromedriver anhand des OS auswählen
         chromedriver = None
         if 'linux' in self.operating_system:
@@ -335,6 +338,11 @@ class ImpfterminService():
                 action = ActionChains(driver)
                 action.move_to_element(button).click().perform()
                 time.sleep(3)
+                if "Ihr Termin am" in str(driver.page_source):
+                    msg = "Termin erfolgreich gebucht!"
+                    self.log.success(msg)
+                    self._desktop_notification("Terminbuchung:", msg)
+                    return True
 
             # prüfen, ob Cookies gesetzt wurden und in Session übernehmen
             try:
@@ -437,7 +445,7 @@ class ImpfterminService():
             else:
                 self.log.info(f"Keine Termine verfügbar in {plz}")
         else:
-            self.log.error("Terminpaare können nicht geladen werden")
+            self.log.error(f"Terminpaare können nicht geladen werden: {res.text}")
         return False, res.status_code
 
     @retry_on_failure()
@@ -500,17 +508,22 @@ class ImpfterminService():
             "phone": "+49" + telefonnummer,
             "plz": plz_impfzentrum
         }
+        while True:
+            res = self.s.post(self.domain + path, json=data, timeout=15)
+            if res.ok:
+                token = res.json().get("token")
+                return token
+            elif res.status_code == 429:
+                self.log.error(
+                    "Anfrage wurde von der Botprotection geblockt. Es werden manuelle Cookies aus dem Browser benötigt. Bitte Anleitung in GITHUB beachten!")
+                cookies = input("Manuelle Cookies:")
+                self.s.headers.update({
+                    'Cookie': cookies
+                })
 
-        res = self.s.post(self.domain + path, json=data, timeout=15)
-        if res.ok:
-            token = res.json().get("token")
-            return token
-        elif res.status_code == 429:
-            self.log.error("Anfrage wurde geblockt. Bitte später erneut versuchen.")
-            return None
-        else:
-            self.log.error(f"Code kann nicht angefragt werden: {res.text}")
-            return None
+            else:
+                self.log.error(f"Code kann nicht angefragt werden: {res.text}")
+                return None
 
     @retry_on_failure()
     def code_bestaetigen(self, token, sms_pin):
@@ -578,8 +591,8 @@ class ImpfterminService():
 
             # Cookies erneuern und pausieren, wenn Terminbuchung nicht möglich war
             # Anschließend nach neuem Termin suchen
-            its.cookies_erneuern(terminbuchung=True)
-            time.sleep(5)
+            if its.cookies_erneuern(terminbuchung=True):
+                return True
 
     def _desktop_notification(self, title: str, message: str):
         """
@@ -635,7 +648,7 @@ def setup_terminsuche(kontaktdaten_path, check_delay):
         strasse = input("> Strasse: ")
         hausnummer = input("> Hausnummer: ")
 
-        # Sicherstellen, dass die PLZ ein valides Format hat. 
+        # Sicherstellen, dass die PLZ ein valides Format hat.
         _wohnort_plz_valid = False
         while not _wohnort_plz_valid:
             wohnort_plz = input("> PLZ des Wohnorts: ")
@@ -717,7 +730,14 @@ def setup_codegenerierung():
 
     mail = input("> Mail: ")
     telefonnummer = input("> Telefonnummer: +49")
-    plz_impfzentrum = input("> PLZ des Impfzentrums: ")
+    while True:
+        plz_impfzentrum = input("> PLZ des Impfzentrums: ")
+        if len(plz_impfzentrum) == 5 and plz_impfzentrum.isdigit():
+            break
+        else:
+            print(
+                f"Die eingegebene PLZ {plz_impfzentrum} scheint ungültig. Genau 5 Stellen und nur Ziffern sind erlaubt.")
+
     print("")
 
     its = ImpfterminService("PLAT-ZHAL-TER1", [plz_impfzentrum], {})
@@ -760,10 +780,13 @@ def main(kontaktdaten_path, check_delay):
     option = input("> Option: ")
     print(" ")
 
-    if option != "2":
-        setup_terminsuche(kontaktdaten_path=kontaktdaten_path, check_delay=check_delay)
-    else:
+    if option == "1":
+        setup_terminsuche()
+    elif option == "2":
         setup_codegenerierung()
+        main(kontaktdaten_path=kontaktdaten_path, check_delay=check_delay)
+    else:
+        print("Falscheingabe! Bitte erneut versuchen:")
         main(kontaktdaten_path, check_delay)
 
 
