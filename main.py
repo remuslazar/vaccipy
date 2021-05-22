@@ -54,7 +54,8 @@ class ImpfterminService():
         self.impfzentrum = {}
         self.domain = None
         if not self.impfzentren_laden():
-            main()
+            self.log.error("Konnte Impfzentren Daten nicht laden")
+            quit()
 
         # Verfügbare Impfstoffe laden
         self.verfuegbare_qualifikationen: List[Dict] = []
