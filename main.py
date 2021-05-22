@@ -4,6 +4,7 @@ import platform
 import sys
 import time
 import traceback
+import argparse
 from base64 import b64encode
 from datetime import datetime
 from random import choice
@@ -612,7 +613,7 @@ class ImpfterminService():
                            + traceback.format_exc())
 
 
-def setup_terminsuche():
+def setup_terminsuche(kontaktdaten_path):
     """
     Setup für die Terminsuche.
     Eingabe aller notwendigen Daten und ausführen der Methoden.
@@ -620,17 +621,16 @@ def setup_terminsuche():
     :return:
     """
 
-    kontaktdaten_path = os.path.join(PATH, "kontaktdaten.json")
     kontaktdaten_erstellen = True
     if os.path.isfile(kontaktdaten_path):
-        daten_laden = input("\n> Sollen die vorhandene Daten aus 'kontaktdaten.json' "
+        daten_laden = input(f"\n> Sollen die vorhandene Daten aus '{kontaktdaten_path}' "
                             "geladen werden (y/n)?: ").lower()
         if daten_laden.lower() != "n":
             kontaktdaten_erstellen = False
 
     if kontaktdaten_erstellen:
         print("\nBitte trage zunächst deinen Impfcode und deine Kontaktdaten ein.\n"
-              "Die Daten werden anschließend lokal in der Datei 'kontaktdaten.json' abgelegt.\n"
+              f"Die Daten werden anschließend lokal in der Datei '{kontaktdaten_path}' abgelegt.\n"
               "Du musst sie zukünftig nicht mehr eintragen.\n")
         code = input("> Code: ")
         print(
@@ -771,7 +771,7 @@ def setup_codegenerierung():
     setup_codegenerierung()
 
 
-def main():
+def main(kontaktdaten_path):
     # Check, ob die Datei "kontaktdaten.json" existiert
     print("\nWas möchtest du tun?\n"
           "[1] Termin suchen\n"
@@ -784,7 +784,7 @@ def main():
         setup_terminsuche()
     elif option == "2":
         setup_codegenerierung()
-        main()
+        main(kontaktdaten_path)
     else:
         print("Falscheingabe! Bitte erneut versuchen:")
         main()
@@ -792,7 +792,12 @@ def main():
 
 if __name__ == "__main__":
     print("vaccipy - Automatische Terminbuchung für den Corona Impfterminservice")
-    main()
+
+    parser = argparse.ArgumentParser(description="vaccipy")
+    parser.add_argument('--config-file', help="Konfigurationsdatei",
+                        default=os.path.join(PATH, "kontaktdaten.json"))
+    args = parser.parse_args()
+    main(kontaktdaten_path=args.config_file)
 
     # Für Windows: Fenster 1 Stunde offen halten nach Ausführung
     time.sleep(60 * 60)
