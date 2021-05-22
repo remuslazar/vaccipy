@@ -781,7 +781,7 @@ def main(kontaktdaten_path, check_delay):
     print(" ")
 
     if option == "1":
-        setup_terminsuche()
+        setup_terminsuche(kontaktdaten_path=kontaktdaten_path, check_delay=check_delay)
     elif option == "2":
         setup_codegenerierung()
         main(kontaktdaten_path=kontaktdaten_path, check_delay=check_delay)
